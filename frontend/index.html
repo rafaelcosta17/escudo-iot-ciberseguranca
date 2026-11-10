@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <title>Escudo IoT — Central de Cibersegurança</title>
+  <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+  <style>
+    :root { --bg: #121212; --card: #1e1e1e; --text: #00ff66; --border: #333; }
+    [data-theme="cyberpunk"] { --bg: #0d0221; --card: #261447; --text: #ff007f; --border: #ff007f; }
+    [data-theme="light"] { --bg: #f4f4f9; --card: #ffffff; --text: #222222; --border: #ccc; }
+
+    body { background: var(--bg); color: var(--text); font-family: monospace; padding: 20px; transition: 0.3s; }
+    .container { max-width: 900px; margin: 0 auto; }
+    .card { background: var(--card); border: 1px solid var(--border); padding: 15px; margin-bottom: 15px; border-radius: 8px; }
+    button { background: var(--text); color: var(--bg); border: none; padding: 8px 15px; cursor: pointer; font-weight: bold; margin-right: 5px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th, td { border: 1px solid var(--border); padding: 8px; text-align: left; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🛡️ ESCUDO IOT — CENTRAL DE CIBERSEGURANÇA</h1>
+    
+    <div class="card">
+      <h3>Tema da Interface:</h3>
+      <button onclick="setTheme('dark')">Dark (Padrão)</button>
+      <button onclick="setTheme('cyberpunk')">Cyberpunk</button>
+      <button onclick="setTheme('light')">Light Mode</button>
+    </div>
+
+    <div class="card">
+      <h2>Estado Atual: <span id="estado">SEGURO</span></h2>
+      <p>Hora ESP: <span id="hora">--:--:--</span> | Temp: <span id="temp">--</span>°C | Hum: <span id="hum">--</span>%</p>
+    </div>
+
+    <div class="card">
+      <h3>Simulador de Ataques Fakes (Auditoria)</h3>
+      <button onclick="simular('CIBER_ATAQUE_DEAUTH')">Simular Deauth Attack</button>
+      <button onclick="simular('CIBER_ATAQUE_JAMMING')">Simular Jamming</button>
+      <button onclick="simular('FALSO_ALERTA')">Simular Falso Alerta</button>
+    </div>
+
+    <div class="card">
+      <h3>Histórico de Eventos (Base de Dados SQLite)</h3>
+      <table>
+        <thead>
+          <tr><th>ID</th><th>Hora ESP</th><th>Estado / Alerta</th><th>Origem</th></tr>
+        </thead>
+        <tbody id="tabela-logs"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    const socket = io();
+
+    function setTheme(theme) {
+      document.body.setAttribute('data-theme', theme);
+    }
+
+    socket.on('telemetria', (data) => {
+      document.getElementById('estado').innerText = data.estado;
+      document.getElementById('hora').innerText = data.hora;
+      document.getElementById('temp').innerText = data.temp;
+      document.getElementById('hum').innerText = data.hum;
+      carregarLogs();
+    });
+
+    async function simular(tipo) {
+      await fetch('/api/simular-ataque', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tipoAtaque: tipo })
+      });
+    }
+
+    async function carregarLogs() {
+      const res = await fetch('/api/logs');
+      const logs = await res.json();
+      const tbody = document.getElementById('tabela-logs');
+      tbody.innerHTML = logs.map(l => 
+        `<tr><td>${l.id}</td><td>${l.hora_esp}</td><td>${l.estado}</td><td>${l.origem}</td></tr>`
+      ).join('');
+    }
+
+    carregarLogs();
+  </script>
+</body>
+</html>
